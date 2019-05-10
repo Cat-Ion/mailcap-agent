@@ -10,7 +10,10 @@ s = socket.socket(socket.AF_UNIX)
 s.connect(os.path.join(os.environ["HOME"], ".mailcap.sock"))
 
 filename = sys.argv[1]
-mime = subprocess.run(["file", "-i", "-b", filename], check=True, stdout=subprocess.PIPE).stdout.decode('utf-8')
+if len(sys.argv) > 2:
+    mime = sys.argv[2]
+else:
+    mime = subprocess.run(["file", "-i", "-b", filename], check=True, stdout=subprocess.PIPE).stdout.decode('utf-8')
 data = open(filename, "rb").read()
 
 def strtr(x, c="B"):
