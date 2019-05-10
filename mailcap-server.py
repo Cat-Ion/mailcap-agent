@@ -112,8 +112,8 @@ if __name__ == "__main__":
         if rv:
             f, mime = rv
             print(f, mime)
-            match = mailcap.findmatch(caps, mime, filename=f)
-            if match:
+            match = mailcap.findmatch(caps, mime.split(';')[0], filename=f)
+            if match and match[0]:
                 os.system(match[0])
                 if 'nodelete' not in match[1]:
                     os.remove(f)
