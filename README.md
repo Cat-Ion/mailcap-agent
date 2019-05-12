@@ -1,4 +1,4 @@
-# Mailcap-agent
+# mailcap-agent
 
 `mailcap-agent` can be used to use local commands to view files from a remote
 host, e.g. when using ssh to read email. To use it, run
@@ -17,3 +17,4 @@ using mailcap-agent:
     application/pdf;~/mailcap-client.py %s %t
 
 and try opening a file.
+
