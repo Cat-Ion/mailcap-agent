@@ -5,6 +5,8 @@ import os
 import tempfile
 import mailcap
 import sys
+import argparse
+import daemon
 
 sockpath = "mailcap.sock"
 
@@ -97,23 +99,43 @@ class Server(object):
             return None
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "-h":
-            print("Usage: %s [socket_path = mailcap.sock]" % (sys.argv[0],))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--pid', '-p', default=os.path.join(os.environ['HOME'], '.mailcap.pid'))
+    parser.add_argument('--action', '-a', default='run', choices=['run', 'kill'])
+    parser.add_argument('--no-daemonize', '-n', action='store_true')
+    parser.add_argument('--socket', '-s', default=os.path.join(os.environ['HOME'], '.mailcap.sock'))
+    args = parser.parse_args()
+
+    if args.action == 'kill':
+        if os.path.exists(args.socket):
+            os.remove(args.socket)
+        if os.path.exists(args.pid):
+            pid = int(open(args.pid).read())
+            try:
+                os.kill(pid, 3)
+            except ProcessLookupError as e:
+                print("Failed to kill process with pid %d:" % (pid,), str(e))
+            os.remove(args.pid)
+            if os.path.exists(args.socket):
+                os.remove(args.socket)
+    elif args.action == 'run':
+        if os.path.exists(args.pid):
+            print("Already running with pid %d" % (int(open(args.pid).read()),))
             exit()
-        else:
-            sockpath = sys.argv[1]
-    if os.path.exists(sockpath):
-        os.remove(sockpath)
-    sv = Server(sockpath)
-    caps = mailcap.getcaps()
-    while True:
-        rv = sv.next_file()
-        if rv:
-            f, mime = rv
-            print(f, mime)
-            match = mailcap.findmatch(caps, mime.split(';')[0], filename=f)
-            if match and match[0]:
-                os.system(match[0])
-                if 'nodelete' not in match[1]:
-                    os.remove(f)
+        if os.path.exists(args.socket):
+            os.remove(args.socket)
+
+        with daemon.DaemonContext(detach_process=not args.no_daemonize, files_preserve=[1,2]):
+            sv = Server(args.socket)
+            caps = mailcap.getcaps()
+            open(args.pid, "w+").write(str(os.getpid()))
+            while True:
+                rv = sv.next_file()
+                if rv:
+                    f, mime = rv
+                    print(f, mime)
+                    match = mailcap.findmatch(caps, mime.split(';')[0], filename=f)
+                    if match and match[0]:
+                        os.system(match[0])
+                        if 'nodelete' not in match[1]:
+                            os.remove(f)
