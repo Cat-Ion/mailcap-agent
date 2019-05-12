@@ -19,4 +19,4 @@ data = open(filename, "rb").read()
 def strtr(x, c="B"):
     return struct.pack(c, len(x)) + x
 
-s.sendall(strtr(filename.encode('utf-8')) + strtr(mime.encode('utf-8')) + strtr(data, "!I"))
+s.sendall(strtr(filename.split(os.pathsep)[-1].encode('utf-8')) + strtr(mime.encode('utf-8')) + strtr(data, "!I"))
