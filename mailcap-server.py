@@ -161,9 +161,10 @@ if __name__ == "__main__":
     parser.add_argument('--no-daemonize', '-n', action='store_true')
     parser.add_argument('--socket', '-s', default=os.path.join(os.environ['HOME'], '.mailcap.sock'))
     parser.add_argument('--dir', '-d', default=None)
+    parser.add_argument('--force', '-f', action='store_true')
     args = parser.parse_args()
 
-    if args.action == 'kill':
+    if args.action == 'kill' or args.force:
         if os.path.exists(args.socket):
             os.remove(args.socket)
         if os.path.exists(args.pid):
@@ -171,11 +172,12 @@ if __name__ == "__main__":
             try:
                 os.kill(pid, 3)
             except ProcessLookupError as e:
-                print("Failed to kill process with pid %d:" % (pid,), str(e))
+                if not args.force:
+                    print("Failed to kill process with pid %d:" % (pid,), str(e))
             os.remove(args.pid)
             if os.path.exists(args.socket):
                 os.remove(args.socket)
-    elif args.action == 'run':
+    if args.action == 'run':
         if os.path.exists(args.pid):
             print("Already running with pid %d" % (int(open(args.pid).read()),))
             exit()
@@ -186,4 +188,4 @@ if __name__ == "__main__":
             run_server(args)
         else:
             with daemon.DaemonContext():
-                run_server()
+                run_server(args)
